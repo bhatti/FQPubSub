@@ -1,0 +1,6 @@
+[submodule "deps/exmpp"]
+	path = deps/exmpp
+	url = http://github.com/processone/exmpp.git
+[submodule "deps/lhttpc"]
+	path = deps/lhttpc
+	url = http://github.com/oscarh/lhttpc.git
