@@ -4,3 +4,9 @@
 [submodule "deps/lhttpc"]
 	path = deps/lhttpc
 	url = http://github.com/oscarh/lhttpc.git
+[submodule "deps/jsonerl"]
+	path = deps/jsonerl
+	url = http://github.com/lambder/jsonerl.git
+[submodule "deps/yaws"]
+	path = deps/yaws
+	url = http://github.com/klacke/yaws.git
