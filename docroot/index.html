@@ -1,176 +1,178 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-"http://www.w3.org/TR/html4/strict.dtd">
+    "http://www.w3.org/TR/html4/strict.dtd">
 <html>
     <head>
-          <script type='text/javascript' src='jquery-1.4.2.js'></script>
-          <script type='text/javascript' src='strophe.js'></script>
-          <script type='text/javascript' src='strophe.pubsub.js'></script>
-          <script type="text/javascript">
-             // The BOSH_SERVICE here doesn't need to be on the same domain/port, but
-             // it must have a /crossdomain.xml policy file that allows access from
-             // wherever crossdomain.html lives.
-             // TODO: REPLACE <paraclete.local> with your <host-name>
-              var HOST = 'paraclete.local';
-              var JID = 'consumer@' + HOST;
-              var PASSWORD = 'consumer';
-              var BOSH_SERVICE = 'http://' + HOST + ':5280/http-bind'; //'/xmpp-httpbind'
-              var PUBSUB = 'pubsub.' + HOST;
-              var connection = null;
-              var autoReconnect = true;
-              var hasQuotes = [];
-              var subscriptions = [];
+        <script type='text/javascript' src='jquery-1.4.2.js'></script>
+        <script type='text/javascript' src='strophe.js'></script>
+        <script type='text/javascript' src='strophe.pubsub.js'></script>
+        <script type="text/javascript">
+            // The BOSH_SERVICE here doesn't need to be on the same domain/port, but
+            // it must have a /crossdomain.xml policy file that allows access from
+            // wherever crossdomain.html lives.
+            // TODO: REPLACE <paraclete.local> with your <host-name>
+            var HOST = 'paraclete.local';
+            var JID = 'consumer@' + HOST;
+            var PASSWORD = 'consumer';
+            var BOSH_SERVICE = 'http://' + HOST + ':5280/http-bind'; //'/xmpp-httpbind'
+            var PUBSUB = 'pubsub.' + HOST;
+            var connection = null;
+            var autoReconnect = true;
+            var hasQuotes = [];
+            var subscriptions = [];
   
-              function log(msg) {
-                  $('#log').append('<div></div>').append(document.createTextNode(msg));
-              }
+            function log(msg) {
+                $('#log').append('<div></div>').append(document.createTextNode(msg));
+            }
   
-              function rawInput(data) {
-                  //log('RECV: ' + data);
-              }
+            function rawInput(data) {
+                //log('RECV: ' + data);
+            }
     
-              function rawOutput(data) {     
-                  //log('SENT: ' + data);
-              }     
-              function onQuote(stanza) {
-                  //log('onQuote###### ' + stanza);
-                  try {
-                      $(stanza).find('event items item data').each(function(idx, elem) {
-                          quote = jQuery.parseJSON($(elem).text());
-                          //{"price":235.86,"change":-10.39,"volume":59857756,"avg_daily_volume":20775600,"stock_exchange":[78,97,115,100,97,113,78,77],"market_cap":2.146e+11,
-                          //"book_value":43.257,"ebitda":1.5805e+10,"dividend_per_share":0.0,"dividend_yield":-1,"earnings_per_share":11.796,"week_52_high":272.46,"week_52_low":119.38,
-                          //"day_50_moving_avg":245.206,"day_200_moving_avg":214.119,"price_earnings_ratio":20.88,"price_earnings_growth_ratio":1.05,"price_sales_ratio":4.38,
-                          //"price_book_ratio":5.69,"short_ratio":0.7}
-                          if (hasQuotes[quote.symbol] != undefined) {
-                              $('price_' + quote.symbol).innerHTML = quote.price;
-                              $('change_' + quote.symbol).innerHTML = quote.change;
-                              $('volume_' + quote.symbol).innerHTML = quote.volume;
-                          } else {
-                              hasQuotes[quote.symbol] = true;
-                              $('#quotesTable > tbody:last').append('<tr id="quote_' +
-                                  quote.symbol + '"><td>' + quote.symbol +
-                                  '</td><td id="price_' + quote.symbol + '">' + quote.price +
-                                  '</td><td id="change_' + quote.symbol + '" class="class_change_' + quote.symbol + '">' +
-                                  quote.change + '</td><td id="volume_' +
-                                  quote.symbol + '">' +
-                                  quote.volume + '</td></tr>');
-                          }
+            function rawOutput(data) {     
+                //log('SENT: ' + data);
+            }     
+            function onQuote(stanza) {
+                //log('onQuote###### ' + stanza);
+                try {
+                    $(stanza).find('event items item data').each(function(idx, elem) {
+                        quote = jQuery.parseJSON($(elem).text());
+                        //{"price":235.86,"change":-10.39,"volume":59857756,"avg_daily_volume":20775600,"stock_exchange":[78,97,115,100,97,113,78,77],"market_cap":2.146e+11,
+                        //"book_value":43.257,"ebitda":1.5805e+10,"dividend_per_share":0.0,"dividend_yield":-1,"earnings_per_share":11.796,"week_52_high":272.46,"week_52_low":119.38,
+                        //"day_50_moving_avg":245.206,"day_200_moving_avg":214.119,"price_earnings_ratio":20.88,"price_earnings_growth_ratio":1.05,"price_sales_ratio":4.38,
+                        //"price_book_ratio":5.69,"short_ratio":0.7}
+                        if (hasQuotes[quote.symbol] != undefined) {
+                            $('price_' + quote.symbol).innerHTML = quote.price;
+                            $('change_' + quote.symbol).innerHTML = quote.change;
+                            $('volume_' + quote.symbol).innerHTML = quote.volume;
+                        } else {
+                            hasQuotes[quote.symbol] = true;
+                            $('#quotesTable > tbody:last').append('<tr id="quote_' +
+                                quote.symbol + '"><td>' + quote.symbol +
+                                '</td><td id="price_' + quote.symbol + '">' + quote.price +
+                                '</td><td id="change_' + quote.symbol + '" class="class_change_' + quote.symbol + '">' +
+                                quote.change + '</td><td id="volume_' +
+                                quote.symbol + '">' +
+                                quote.volume + '</td></tr>');
+                        }
 
-                          if(quote.change < 0) {
-                              $('.class_change_' + quote.symbol).css('color', 'red');
-                          } else {
-                              $('.class_change_' + quote.symbol).css('color', 'green');
-                          }
-                      });
-                  } catch (e) {
-                     log(e)
-                  } 
-                  return true;
-              }
+                        if(quote.change < 0) {
+                            $('.class_change_' + quote.symbol).css('color', 'red');
+                        } else {
+                            $('.class_change_' + quote.symbol).css('color', 'green');
+                        }
+                    });
+                } catch (e) {
+                    log(e)
+                } 
+                return true;
+            }
 
-              function handleSubscriptionChange (stanza) {
-                  //log("***handleSubscriptionChange  Received: " + stanza);
-              }
+            function handleSubscriptionChange (stanza) {
+                //log("***handleSubscriptionChange  Received: " + stanza);
+            }
         
-              function onConnect(status) {
-                  if (status == Strophe.Status.CONNECTING) {
-                      log('Strophe is connecting.');
-                  } else if (status == Strophe.Status.CONNFAIL) {
-                      log('Strophe failed to connect.');
-                      $('#connect').get(0).value = 'connect';
-                  } else if (status == Strophe.Status.DISCONNECTING) {
-                      log('Strophe is disconnecting.');
-                  } else if (status == Strophe.Status.DISCONNECTED) {
-                     if (autoReconnect) {
-                         log( "Streaming disconnected. Trying to reconnect...", METHODNAME );
-                         connection.connect($('#jid').get(0).value, $('#pass').get(0).value, onConnect);
-                         log( "Streaming reconnected.", METHODNAME );
-                     } else {
-                         log('Strophe is disconnected.');
-                         $('#connect').get(0).value = 'connect';
-                         //publishEvent( "streamingDisconnected" );
-                     }
-                  } else if (status == Strophe.Status.CONNECTED) {
-                      log('Strophe is connected.');
-                      //log('QUOTE_BOT: Send a message to ' + connection.jid + ' to talk to me.');
-                      connection.addHandler(onMessage, null, 'message', null, null,  null); 
-                      connection.send($pres().tree());
-                      publishEvent( "streamingConnected" );
-                  }
-              }
+            function onConnect(status) {
+                if (status == Strophe.Status.CONNECTING) {
+                    log('Strophe is connecting.');
+                } else if (status == Strophe.Status.CONNFAIL) {
+                    log('Strophe failed to connect.');
+                    $('#connect').get(0).value = 'connect';
+                } else if (status == Strophe.Status.DISCONNECTING) {
+                    log('Strophe is disconnecting.');
+                } else if (status == Strophe.Status.DISCONNECTED) {
+                    if (autoReconnect) {
+                        log( "Streaming disconnected. Trying to reconnect...", METHODNAME );
+                        connection.connect($('#jid').get(0).value, $('#pass').get(0).value, onConnect);
+                        log( "Streaming reconnected.", METHODNAME );
+                    } else {
+                        log('Strophe is disconnected.');
+                        $('#connect').get(0).value = 'connect';
+                        //publishEvent( "streamingDisconnected" );
+                    }
+                } else if (status == Strophe.Status.CONNECTED) {
+                    log('Strophe is connected.');
+                    //log('QUOTE_BOT: Send a message to ' + connection.jid + ' to talk to me.');
+                    connection.addHandler(onMessage, null, 'message', null, null,  null); 
+                    connection.send($pres().tree());
+                    publishEvent( "streamingConnected" );
+                }
+            }
 
-              function subscribe(symbol) {
-                  if (subscriptions[symbol]) return;
-                  try {
-                      connection.pubsub.subscribe(JID, PUBSUB, symbol, [], onQuote, handleSubscriptionChange);
-                      subscriptions[symbol] = true;
-                      log("Subscribed to " + symbol);
-                  } catch (e) {
-                      alert(e)
-                  } 
-              } 
-              function unsubscribe(symbol) {
-                  if (!subscriptions[symbol]) return;
-                  try {
-                      connection.pubsub.unsubscribe(JID, PUBSUB, symbol, handleSubscriptionChange);
-                      subscriptions[symbol] = false;
-                      log("Unsubscribed from " + symbol);
-                  } catch (e) {
-                      alert(e)
-                  } 
-              } 
+            function subscribe(symbol) {
+                if (subscriptions[symbol]) return;
+                try {
+                    connection.pubsub.subscribe(JID, PUBSUB, symbol, [], onQuote, handleSubscriptionChange);
+                    subscriptions[symbol] = true;
+                    log("Subscribed to " + symbol);
+                } catch (e) {
+                    alert(e)
+                } 
+            } 
+            function unsubscribe(symbol) {
+                if (!subscriptions[symbol]) return;
+                try {
+                    connection.pubsub.unsubscribe(JID, PUBSUB, symbol, handleSubscriptionChange);
+                    subscriptions[symbol] = false;
+                    log("Unsubscribed from " + symbol);
+                } catch (e) {
+                    alert(e)
+                } 
+            } 
   
-              function onMessage(msg) {
-                  var to = msg.getAttribute('to');
-                  var from = msg.getAttribute('from');
-                  var type = msg.getAttribute('type');
-                  var elems = msg.getElementsByTagName('body');
+            function onMessage(msg) {
+                var to = msg.getAttribute('to');
+                var from = msg.getAttribute('from');
+                var type = msg.getAttribute('type');
+                var elems = msg.getElementsByTagName('body');
   
-                  if (type == "chat" && elems.length > 0) {
-                      var body = elems[0];
-                      log('QUOTE_BOT: I got a message from ' + from + ': ' + Strophe.getText(body));
-                      var reply = $msg({to: from, from: to, type: 'chat'}).cnode(Strophe.copyElement(body));
-                      connection.send(reply.tree());
-                      log('QUOTE_BOT: I sent ' + from + ': ' + Strophe.getText(body));
-                  }
-                  // we must return true to keep the handler alive.  
-                  // returning false would remove it after it finishes.
-                  return true;
-              }
+                if (type == "chat" && elems.length > 0) {
+                    var body = elems[0];
+                    log('QUOTE_BOT: I got a message from ' + from + ': ' + Strophe.getText(body));
+                    var reply = $msg({to: from, from: to, type: 'chat'}).cnode(Strophe.copyElement(body));
+                    connection.send(reply.tree());
+                    log('QUOTE_BOT: I sent ' + from + ': ' + Strophe.getText(body));
+                }
+                // we must return true to keep the handler alive.  
+                // returning false would remove it after it finishes.
+                return true;
+            }
  
-              $(document).ready(function () {
-                  connection = new Strophe.Connection(BOSH_SERVICE);
-                  connection.rawInput = rawInput;
-                  connection.rawOutput = rawOutput;
-                  connection.connect(JID, PASSWORD, onConnect);
-                  //connection.disconnect();
-                  $('#add_symbol').bind('click', function () {
-                      var symbol = $('#symbol').get(0).value;
-                      subscribe(symbol);
-                  });
-              });
+            $(document).ready(function () {
+                connection = new Strophe.Connection(BOSH_SERVICE);
+                connection.rawInput = rawInput;
+                connection.rawOutput = rawOutput;
+                connection.connect(JID, PASSWORD, onConnect);
+                //connection.disconnect();
+                $('#add_symbol').bind('click', function () {
+                    var symbol = $('#symbol').get(0).value;
+                    subscribe(symbol);
+                });
+            });
 
-          </script>
-          <body>
-      <form name='symbols'>
-        <label for='symbol'>Symbol:</label>
-        <input type='text' id='symbol'/>
-        <input type='button' id='add_symbol' value='add' />
-      </form>
-    <hr />
-    <div id='log'></div>
-    <table id="quotesTable" width="600" border="2" bordercolor="#333333">
-      <thead>
-          <tr>
-            <th>Symbol</th>
-            <th>Price</th>
-            <th>Change</th>
-            <th>Volume</th>
-          </tr>
-        </thead>
-      <tbody>
-      </tbody>
-    </table>
+        </script>
+    <body>
+
+        <form name='symbols'>
+            <label for='symbol'>Symbol:</label>
+            <input type='text' id='symbol'/>
+            <input type='button' id='add_symbol' value='add' />
+        </form>
+        <hr />
+        <div id='log'></div>
+        <table id="quotesTable" width="600" border="2" bordercolor="#333333">
+
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>Change</th>
+                    <th>Volume</th>
+                </tr>
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
     </body>
 </html>
-
 
