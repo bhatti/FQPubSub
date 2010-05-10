@@ -22,11 +22,12 @@ quote(Symbol) ->
 
     Values = re:split(Response, "[,\r\n]"),
     #quote{
+        symbol = list_to_binary(Symbol),
         price = to_float(lists:nth(1, Values)), 
         change = to_float(lists:nth(2, Values)), 
         volume = to_integer(lists:nth(3, Values)), 
         avg_daily_volume = to_integer(lists:nth(4, Values)), 
-        stock_exchange = to_string(lists:nth(5, Values)),
+        stock_exchange = lists:nth(5, Values), % to_string
         market_cap = to_float(lists:nth(6, Values)),  % B
         book_value = to_float(lists:nth(7, Values)), 
         ebitda = to_float(lists:nth(8, Values)),  % B

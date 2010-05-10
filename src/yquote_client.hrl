@@ -1,4 +1,5 @@
 -record(quote, {
+        symbol, 
         price, 
         change, 
         volume, 

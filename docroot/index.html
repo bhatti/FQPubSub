@@ -2,7 +2,7 @@
 "http://www.w3.org/TR/html4/strict.dtd">
 <html>
     <head>
-          <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'></script>
+          <script type='text/javascript' src='jquery-1.4.2.js'></script>
           <script type='text/javascript' src='strophe.js'></script>
           <script type='text/javascript' src='strophe.pubsub.js'></script>
           <script type="text/javascript">
@@ -14,23 +14,40 @@
               var PUBSUB = 'pubsub.paraclete.local';
               var connection = null;
               var autoReconnect = true;
+              var quotes = [];
   
               function log(msg) {
                   $('#log').append('<div></div>').append(document.createTextNode(msg));
               }
   
               function rawInput(data) {
-                  log('RECV: ' + data);
+                  //log('RECV: ' + data);
               }
     
               function rawOutput(data) {     
-                  log('SENT: ' + data);
+                  //log('SENT: ' + data);
               }     
               function onQuote(stanza) {
-                  log('onQuote###### ' + stanza);
+                  //log('onQuote###### ' + stanza);
+                  try {
                       $(stanza).find('event items item data').each(function(idx, elem) {
-                          quote = $.parseJSON($(elem).text());
-                          log(json);
+                          quote = jQuery.parseJSON($(elem).text());
+                          //{"price":235.86,"change":-10.39,"volume":59857756,"avg_daily_volume":20775600,"stock_exchange":[78,97,115,100,97,113,78,77],"market_cap":2.146e+11,"book_value":43.257,"ebitda":1.5805e+10,"dividend_per_share":0.0,"dividend_yield":-1,"earnings_per_share":11.796,"week_52_high":272.46,"week_52_low":119.38,"day_50_moving_avg":245.206,"day_200_moving_avg":214.119,"price_earnings_ratio":20.88,"price_earnings_growth_ratio":1.05,"price_sales_ratio":4.38,"price_book_ratio":5.69,"short_ratio":0.7}
+                          if (quotes[quote.symbol] != undefined) {
+                              $('price_' + quote.symbol).innerHTML = quote.price;
+                              $('change_' + quote.symbol).innerHTML = quote.change;
+                              $('volume_' + quote.symbol).innerHTML = quote.volume;
+                          } else {
+                              quotes[quote.symbol] = true;
+                              $('#quotesTable > tbody:last').append('<tr id="quote_' +
+                                  quote.symbol + '"><td>' + quote.symbol +
+                                  '</td><td id="price_' + quote.symbol + '">' + quote.price +
+                                  '</td><td id="change_' + quote.symbol + '">' +
+                                  quote.change + '</td><td id="volume_' +
+                                  quote.symbol + '">' +
+                                  quote.volume + '</td></tr>');
+                          }
+
                           //$('#bid-' + quote.symbol).text('$' + quote.bid);
                           //$('#ask-' + quote.symbol).text('$' + quote.ask);
                           //if(parseFloat(quote.bid) < open_table[quote.symbol]['open']) {
@@ -39,11 +56,13 @@
                               //$('.symbol-' + quote.symbol).css('color', 'green');
                           //}
                       });
+        } catch (e) {
+           log(e)
+        } 
                       return true;
               }
               function handleSubscriptionChange (stanza) {
-                  log("***handleSubscriptionChange  Received:");
-                  log(stanza);
+                  log("***handleSubscriptionChange  Received: " + stanza);
               }
         
               function onConnect(status) {
@@ -68,8 +87,8 @@
                       log("Subscribing to AAPL " + status);
 try {
                       connection.pubsub.subscribe(jid, PUBSUB, "AAPL", [], onQuote, handleSubscriptionChange);
-        } catch (aEr) {
-           alert(aEr)
+        } catch (e) {
+           alert(e)
         } 
                       //connection.pubsub.unsubscribe(this.jid, this.pubSubComponent, symbol, this.handleSubscriptionChange);
                       log('Strophe is connected.');
@@ -129,6 +148,19 @@ try {
     </div>
     <hr />
     <div id='log'></div>
+    <table id="quotesTable" width="100%" border="2">
+      <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Volume</th>
+          </tr>
+        </thead>
+      <tbody>
+      </tbody>
+    </table>
+
     </body>
 </html>
 
