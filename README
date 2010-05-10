@@ -1,3 +1,6 @@
+Preprocessing
+  replace <paraclete.local> with your <host-name> in docroot/index.html and src/quote_utils.hrl
+
 Building
   git submodule init
   git submodule update
@@ -5,16 +8,19 @@ Building
 
 Start Ejabberd, e.g.
   sudo /Applications/ejabberd-2.1.3/bin/ejabberdctl start
-  sudo /Applications/ejabberd-2.1.3/bin/ejabberdctl register producer paraclete.local producer
-  sudo /Applications/ejabberd-2.1.3/bin/ejabberdctl register consumer paraclete.local consumer
+  sudo /Applications/ejabberd-2.1.3/bin/ejabberdctl register producer <hostname> producer
+  sudo /Applications/ejabberd-2.1.3/bin/ejabberdctl register consumer <hostname> consumer
 
 
 Browser Admin
-  http://yourmachine.local:5280/admin
+  http://<hostname>:5280/admin
 
 Install PSI for debugging
 
 
 Running
+  erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ deps/yaws/ebin -boot start_sasl -run web_server start 
+  erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ deps/yaws/ebin -boot start_sasl -run quote_publisher start AAPL
+  erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ deps/yaws/ebin -boot start_sasl -run web_server start -run init stop -noshell
   erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ deps/yaws/ebin -boot start_sasl
   quote_publisher:start("AAPL").

@@ -9,12 +9,16 @@
              // The BOSH_SERVICE here doesn't need to be on the same domain/port, but
              // it must have a /crossdomain.xml policy file that allows access from
              // wherever crossdomain.html lives.
-              var jid = 'consumer@paraclete.local';
-              var BOSH_SERVICE = 'http://paraclete.local:5280/http-bind'; //'/xmpp-httpbind'
-              var PUBSUB = 'pubsub.paraclete.local';
+             // TODO: REPLACE <paraclete.local> with your <host-name>
+              var HOST = 'paraclete.local';
+              var JID = 'consumer@' + HOST;
+              var PASSWORD = 'consumer';
+              var BOSH_SERVICE = 'http://' + HOST + ':5280/http-bind'; //'/xmpp-httpbind'
+              var PUBSUB = 'pubsub.' + HOST;
               var connection = null;
               var autoReconnect = true;
-              var quotes = [];
+              var hasQuotes = [];
+              var subscriptions = [];
   
               function log(msg) {
                   $('#log').append('<div></div>').append(document.createTextNode(msg));
@@ -32,37 +36,39 @@
                   try {
                       $(stanza).find('event items item data').each(function(idx, elem) {
                           quote = jQuery.parseJSON($(elem).text());
-                          //{"price":235.86,"change":-10.39,"volume":59857756,"avg_daily_volume":20775600,"stock_exchange":[78,97,115,100,97,113,78,77],"market_cap":2.146e+11,"book_value":43.257,"ebitda":1.5805e+10,"dividend_per_share":0.0,"dividend_yield":-1,"earnings_per_share":11.796,"week_52_high":272.46,"week_52_low":119.38,"day_50_moving_avg":245.206,"day_200_moving_avg":214.119,"price_earnings_ratio":20.88,"price_earnings_growth_ratio":1.05,"price_sales_ratio":4.38,"price_book_ratio":5.69,"short_ratio":0.7}
-                          if (quotes[quote.symbol] != undefined) {
+                          //{"price":235.86,"change":-10.39,"volume":59857756,"avg_daily_volume":20775600,"stock_exchange":[78,97,115,100,97,113,78,77],"market_cap":2.146e+11,
+                          //"book_value":43.257,"ebitda":1.5805e+10,"dividend_per_share":0.0,"dividend_yield":-1,"earnings_per_share":11.796,"week_52_high":272.46,"week_52_low":119.38,
+                          //"day_50_moving_avg":245.206,"day_200_moving_avg":214.119,"price_earnings_ratio":20.88,"price_earnings_growth_ratio":1.05,"price_sales_ratio":4.38,
+                          //"price_book_ratio":5.69,"short_ratio":0.7}
+                          if (hasQuotes[quote.symbol] != undefined) {
                               $('price_' + quote.symbol).innerHTML = quote.price;
                               $('change_' + quote.symbol).innerHTML = quote.change;
                               $('volume_' + quote.symbol).innerHTML = quote.volume;
                           } else {
-                              quotes[quote.symbol] = true;
+                              hasQuotes[quote.symbol] = true;
                               $('#quotesTable > tbody:last').append('<tr id="quote_' +
                                   quote.symbol + '"><td>' + quote.symbol +
                                   '</td><td id="price_' + quote.symbol + '">' + quote.price +
-                                  '</td><td id="change_' + quote.symbol + '">' +
+                                  '</td><td id="change_' + quote.symbol + '" class="class_change_' + quote.symbol + '">' +
                                   quote.change + '</td><td id="volume_' +
                                   quote.symbol + '">' +
                                   quote.volume + '</td></tr>');
                           }
 
-                          //$('#bid-' + quote.symbol).text('$' + quote.bid);
-                          //$('#ask-' + quote.symbol).text('$' + quote.ask);
-                          //if(parseFloat(quote.bid) < open_table[quote.symbol]['open']) {
-                              //$('.symbol-' + quote.symbol).css('color', 'red');
-                          //} else {
-                              //$('.symbol-' + quote.symbol).css('color', 'green');
-                          //}
+                          if(quote.change < 0) {
+                              $('.class_change_' + quote.symbol).css('color', 'red');
+                          } else {
+                              $('.class_change_' + quote.symbol).css('color', 'green');
+                          }
                       });
-        } catch (e) {
-           log(e)
-        } 
-                      return true;
+                  } catch (e) {
+                     log(e)
+                  } 
+                  return true;
               }
+
               function handleSubscriptionChange (stanza) {
-                  log("***handleSubscriptionChange  Received: " + stanza);
+                  //log("***handleSubscriptionChange  Received: " + stanza);
               }
         
               function onConnect(status) {
@@ -84,20 +90,34 @@
                          //publishEvent( "streamingDisconnected" );
                      }
                   } else if (status == Strophe.Status.CONNECTED) {
-                      log("Subscribing to AAPL " + status);
-try {
-                      connection.pubsub.subscribe(jid, PUBSUB, "AAPL", [], onQuote, handleSubscriptionChange);
-        } catch (e) {
-           alert(e)
-        } 
-                      //connection.pubsub.unsubscribe(this.jid, this.pubSubComponent, symbol, this.handleSubscriptionChange);
                       log('Strophe is connected.');
-                      log('QUOTE_BOT: Send a message to ' + connection.jid + ' to talk to me.');
+                      //log('QUOTE_BOT: Send a message to ' + connection.jid + ' to talk to me.');
                       connection.addHandler(onMessage, null, 'message', null, null,  null); 
                       connection.send($pres().tree());
                       publishEvent( "streamingConnected" );
                   }
               }
+
+              function subscribe(symbol) {
+                  if (subscriptions[symbol]) return;
+                  try {
+                      connection.pubsub.subscribe(JID, PUBSUB, symbol, [], onQuote, handleSubscriptionChange);
+                      subscriptions[symbol] = true;
+                      log("Subscribed to " + symbol);
+                  } catch (e) {
+                      alert(e)
+                  } 
+              } 
+              function unsubscribe(symbol) {
+                  if (!subscriptions[symbol]) return;
+                  try {
+                      connection.pubsub.unsubscribe(JID, PUBSUB, symbol, handleSubscriptionChange);
+                      subscriptions[symbol] = false;
+                      log("Unsubscribed from " + symbol);
+                  } catch (e) {
+                      alert(e)
+                  } 
+              } 
   
               function onMessage(msg) {
                   var to = msg.getAttribute('to');
@@ -121,34 +141,24 @@ try {
                   connection = new Strophe.Connection(BOSH_SERVICE);
                   connection.rawInput = rawInput;
                   connection.rawOutput = rawOutput;
-                  $('#connect').bind('click', function () {
-                      var button = $('#connect').get(0);
-                      if (button.value == 'connect') {
-                          button.value = 'disconnect';
-                          connection.connect($('#jid').get(0).value,
-                                 $('#pass').get(0).value,
-                                 onConnect);
-                      } else {
-                          button.value = 'connect';
-                          connection.disconnect();
-                      }
+                  connection.connect(JID, PASSWORD, onConnect);
+                  //connection.disconnect();
+                  $('#add_symbol').bind('click', function () {
+                      var symbol = $('#symbol').get(0).value;
+                      subscribe(symbol);
                   });
               });
 
           </script>
           <body>
-        <div id='login' style='text-align: center'>
-      <form name='cred'>
-        <label for='jid'>JID:</label>
-        <input type='text' id='jid' value='consumer@paraclete.local'/>
-        <label for='pass'>Password:</label>
-        <input type='password' id='pass' value='consumer'/>
-        <input type='button' id='connect' value='connect' />
+      <form name='symbols'>
+        <label for='symbol'>Symbol:</label>
+        <input type='text' id='symbol'/>
+        <input type='button' id='add_symbol' value='add' />
       </form>
-    </div>
     <hr />
     <div id='log'></div>
-    <table id="quotesTable" width="100%" border="2">
+    <table id="quotesTable" width="600" border="2" bordercolor="#333333">
       <thead>
           <tr>
             <th>Symbol</th>
@@ -160,7 +170,6 @@ try {
       <tbody>
       </tbody>
     </table>
-
     </body>
 </html>
 

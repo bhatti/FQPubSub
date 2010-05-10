@@ -20,10 +20,7 @@ bosh_url(Host, Port) ->
 
 
 connect(Host, _Port, User, Password) ->
-    ok = application:start(exmpp),
-    ok = application:start(crypto),
-    ok = application:start(ssl),
-    ok = application:start(lhttpc),
+    safe_start_apps(),
     MySession = exmpp_session:start({1,0}),
     exmpp_xml:start_parser(), %% Create XMPP ID (Session Key):
     MyJID = exmpp_jid:make(User, Host, random),
@@ -58,4 +55,14 @@ init_session(MySession, Password) ->
 disconnect(MySession) ->
     exmpp_session:stop(MySession).
 
+safe_start_apps() ->
+    try start_apps()
+    catch
+        _:Error -> io:format("apps already started : ~p~n", [Error]), {error, Error}
+    end.
 
+start_apps() ->
+    ok = application:start(exmpp),
+    ok = application:start(crypto),
+    ok = application:start(ssl),
+    ok = application:start(lhttpc).
