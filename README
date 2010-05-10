@@ -16,6 +16,5 @@ Install PSI for debugging
 
 
 Running
-  erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ -boot start_sasl 
-  yquote_client:quote("IBM").
-
+  erl -pa ebin deps/exmpp/ebin/ deps/lhttpc/ebin/ deps/yaws/ebin -boot start_sasl
+  quote_publisher:start("AAPL").

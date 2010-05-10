@@ -46,6 +46,8 @@ quote(Symbol) ->
 url(Symbol) ->
     "http://finance.yahoo.com/d/quotes.csv?s=" ++ Symbol ++ "&f=l1c1va2xj1b4j4dyekjm3m4rr5p5p6s7".
 
+to_float(<<"N/A">>) ->
+    -1;
 to_float(Bin) ->
     {Multiplier, Bin1} = case bin_ends_with(Bin, <<$B>>) of
         true ->

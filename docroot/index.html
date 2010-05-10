@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+          <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'></script>
+          <script type='text/javascript' src='strophe.js'></script>
+          <script type='text/javascript' src='strophe.pubsub.js'></script>
+          <script type="text/javascript">
+             // The BOSH_SERVICE here doesn't need to be on the same domain/port, but
+             // it must have a /crossdomain.xml policy file that allows access from
+             // wherever crossdomain.html lives.
+              var jid = 'consumer@paraclete.local';
+              var BOSH_SERVICE = 'http://paraclete.local:5280/http-bind'; //'/xmpp-httpbind'
+              var PUBSUB = 'pubsub.paraclete.local';
+              var connection = null;
+              var autoReconnect = true;
+  
+              function log(msg) {
+                  $('#log').append('<div></div>').append(document.createTextNode(msg));
+              }
+  
+              function rawInput(data) {
+                  log('RECV: ' + data);
+              }
+    
+              function rawOutput(data) {     
+                  log('SENT: ' + data);
+              }     
+              function onQuote(stanza) {
+                  log('onQuote###### ' + stanza);
+                      $(stanza).find('event items item data').each(function(idx, elem) {
+                          quote = $.parseJSON($(elem).text());
+                          log(json);
+                          //$('#bid-' + quote.symbol).text('$' + quote.bid);
+                          //$('#ask-' + quote.symbol).text('$' + quote.ask);
+                          //if(parseFloat(quote.bid) < open_table[quote.symbol]['open']) {
+                              //$('.symbol-' + quote.symbol).css('color', 'red');
+                          //} else {
+                              //$('.symbol-' + quote.symbol).css('color', 'green');
+                          //}
+                      });
+                      return true;
+              }
+              function handleSubscriptionChange (stanza) {
+                  log("***handleSubscriptionChange  Received:");
+                  log(stanza);
+              }
+        
+              function onConnect(status) {
+                  if (status == Strophe.Status.CONNECTING) {
+                      log('Strophe is connecting.');
+                  } else if (status == Strophe.Status.CONNFAIL) {
+                      log('Strophe failed to connect.');
+                      $('#connect').get(0).value = 'connect';
+                  } else if (status == Strophe.Status.DISCONNECTING) {
+                      log('Strophe is disconnecting.');
+                  } else if (status == Strophe.Status.DISCONNECTED) {
+                     if (autoReconnect) {
+                         log( "Streaming disconnected. Trying to reconnect...", METHODNAME );
+                         connection.connect($('#jid').get(0).value, $('#pass').get(0).value, onConnect);
+                         log( "Streaming reconnected.", METHODNAME );
+                     } else {
+                         log('Strophe is disconnected.');
+                         $('#connect').get(0).value = 'connect';
+                         //publishEvent( "streamingDisconnected" );
+                     }
+                  } else if (status == Strophe.Status.CONNECTED) {
+                      log("Subscribing to AAPL " + status);
+try {
+                      connection.pubsub.subscribe(jid, PUBSUB, "AAPL", [], onQuote, handleSubscriptionChange);
+        } catch (aEr) {
+           alert(aEr)
+        } 
+                      //connection.pubsub.unsubscribe(this.jid, this.pubSubComponent, symbol, this.handleSubscriptionChange);
+                      log('Strophe is connected.');
+                      log('QUOTE_BOT: Send a message to ' + connection.jid + ' to talk to me.');
+                      connection.addHandler(onMessage, null, 'message', null, null,  null); 
+                      connection.send($pres().tree());
+                      publishEvent( "streamingConnected" );
+                  }
+              }
+  
+              function onMessage(msg) {
+                  var to = msg.getAttribute('to');
+                  var from = msg.getAttribute('from');
+                  var type = msg.getAttribute('type');
+                  var elems = msg.getElementsByTagName('body');
+  
+                  if (type == "chat" && elems.length > 0) {
+                      var body = elems[0];
+                      log('QUOTE_BOT: I got a message from ' + from + ': ' + Strophe.getText(body));
+                      var reply = $msg({to: from, from: to, type: 'chat'}).cnode(Strophe.copyElement(body));
+                      connection.send(reply.tree());
+                      log('QUOTE_BOT: I sent ' + from + ': ' + Strophe.getText(body));
+                  }
+                  // we must return true to keep the handler alive.  
+                  // returning false would remove it after it finishes.
+                  return true;
+              }
+ 
+              $(document).ready(function () {
+                  connection = new Strophe.Connection(BOSH_SERVICE);
+                  connection.rawInput = rawInput;
+                  connection.rawOutput = rawOutput;
+                  $('#connect').bind('click', function () {
+                      var button = $('#connect').get(0);
+                      if (button.value == 'connect') {
+                          button.value = 'disconnect';
+                          connection.connect($('#jid').get(0).value,
+                                 $('#pass').get(0).value,
+                                 onConnect);
+                      } else {
+                          button.value = 'connect';
+                          connection.disconnect();
+                      }
+                  });
+              });
+
+          </script>
+          <body>
+        <div id='login' style='text-align: center'>
+      <form name='cred'>
+        <label for='jid'>JID:</label>
+        <input type='text' id='jid' value='consumer@paraclete.local'/>
+        <label for='pass'>Password:</label>
+        <input type='password' id='pass' value='consumer'/>
+        <input type='button' id='connect' value='connect' />
+      </form>
+    </div>
+    <hr />
+    <div id='log'></div>
+    </body>
+</html>
+
+
